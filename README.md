@@ -10,10 +10,14 @@ python -m pip install -r requirements.txt
 
 ## Train
 
-Start a local MLflow tracking server in one terminal:
+From the repository root, start a local MLflow tracking server in one terminal. Run metadata is stored in `mlflow.db` (SQLite), and model/artifact files are stored in `mlartifacts/`:
 
 ```bash
-mlflow server --host 127.0.0.1 --port 5000
+mlflow server \
+  --backend-store-uri sqlite:///mlflow.db \
+  --artifacts-destination ./mlartifacts \
+  --host 127.0.0.1 \
+  --port 5000
 ```
 
 In another terminal, run:

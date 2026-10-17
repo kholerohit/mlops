@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+mlflow
+numpy
+pandas
+scikit-learn
+optuna
+matplotlib

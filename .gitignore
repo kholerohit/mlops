@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Notebook checkpoints and generated reports
+.ipynb_checkpoints/
+diabetes_eda_report.html
+
+# Local MLflow tracking data and model artifacts
+mlflow.db
+mlruns/
+mlartifacts/
+
+# Editor and OS files
+.vscode/
+.DS_Store

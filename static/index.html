@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Diabetes Progression Predictor</title>
+  <style>
+    :root { font: 16px/1.5 system-ui, sans-serif; color: #17211d; background: #f3f6f4; }
+    body { margin: 0; padding: 40px 18px; }
+    main { max-width: 760px; margin: auto; padding: 30px; background: white; border: 1px solid #dce5df; border-radius: 16px; }
+    h1 { margin: 0 0 6px; font-size: 1.7rem; }
+    p { color: #53625a; margin-top: 0; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
+    label { font-size: .9rem; font-weight: 600; }
+    input { display: block; box-sizing: border-box; width: 100%; margin-top: 5px; padding: 10px; border: 1px solid #cbd6ce; border-radius: 8px; font: inherit; }
+    button { margin-top: 20px; padding: 11px 18px; color: white; background: #176b4b; border: 0; border-radius: 8px; font: inherit; font-weight: 650; cursor: pointer; }
+    button:disabled { opacity: .6; cursor: wait; }
+    #result { margin-top: 18px; padding: 14px; background: #eef7f1; border-radius: 8px; }
+    [hidden] { display: none !important; }
+    code { background: #f0f3f1; padding: 2px 4px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Diabetes progression prediction</h1>
+    <p>Enter the 10 numeric features used by the model. Values should use the diabetes dataset’s normalized format (typically around −0.2 to 0.2). This demo predicts a dataset score, not a diagnosis.</p>
+    <form id="form">
+      <div class="grid" id="fields"></div>
+      <button id="submit" type="submit">Get prediction</button>
+    </form>
+    <div id="result" role="status" hidden></div>
+    <p style="margin-top:18px">API format: <code>POST /predict</code> with JSON keys <code>age, sex, bmi, bp, s1, s2, s3, s4, s5, s6</code>. Interactive API docs: <a href="/docs">/docs</a>.</p>
+  </main>
+  <script>
+    const features = ["age", "sex", "bmi", "bp", "s1", "s2", "s3", "s4", "s5", "s6"];
+    const fields = document.querySelector("#fields");
+    features.forEach((name) => {
+      const label = document.createElement("label");
+      label.textContent = name;
+      const input = document.createElement("input");
+      input.name = name; input.type = "number"; input.step = "any"; input.required = true;
+      input.placeholder = "e.g. 0.05";
+      label.append(input); fields.append(label);
+    });
+    const result = document.querySelector("#result");
+    document.querySelector("#form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = document.querySelector("#submit");
+      button.disabled = true; result.hidden = false; result.textContent = "Getting prediction…";
+      const payload = Object.fromEntries(new FormData(event.currentTarget));
+      for (const key of features) payload[key] = Number(payload[key]);
+      try {
+        const response = await fetch("/predict", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || "Request failed");
+        result.textContent = `Predicted progression score: ${data.prediction.toFixed(2)}`;
+      } catch (error) { result.textContent = `Error: ${error.message}`; }
+      finally { button.disabled = false; }
+    });
+  </script>
+</body>
+</html>

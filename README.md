@@ -50,3 +50,11 @@ Send all 10 numeric features as JSON to `POST /predict`:
 ```
 
 Inputs follow the normalized feature format of scikit-learn's diabetes dataset. The output is a progression score, not a medical diagnosis.
+
+<!-- ...existing code... -->
+
+## Experiment Tracking
+
+This project uses DagsHub with MLflow for remote experiment tracking. Training runs log parameters, cross-validation and test metrics, and the trained model artifact to the `kholerohit/mlops` DagsHub repository. This keeps experiment information available remotely instead of relying on a local MLflow tracking server.
+
+<!-- ...existing code... -->

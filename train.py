@@ -1,16 +1,16 @@
-
 import mlflow
 import mlflow.sklearn
 import optuna
 import numpy as np
+import dagshub
 
 from sklearn.datasets import load_diabetes
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
-# Connect to your existing MLflow server
-mlflow.set_tracking_uri("http://127.0.0.1:5000")
+
+dagshub.init(repo_owner="kholerohit", repo_name="mlops", mlflow=True)
 mlflow.set_experiment("diabetes-hyperparameter-optimization")
 
 # Load data and reserve an untouched test set
@@ -19,11 +19,11 @@ X_train, X_test, y_train, y_test = train_test_split(
     data.data, data.target, test_size=0.2, random_state=42
 )
 
+
 def objective(trial):
-    # Ask Optuna for a candidate configuration
     params = {
-        "n_estimators": trial.suggest_int("n_estimators", 50, 300),
-        "max_depth": trial.suggest_int("max_depth", 2, 20),
+        "n_estimators": trial.suggest_int("n_estimators", 50, 310),
+        "max_depth": trial.suggest_int("max_depth", 2, 22),
         "min_samples_split": trial.suggest_int("min_samples_split", 2, 20),
         "min_samples_leaf": trial.suggest_int("min_samples_leaf", 1, 10),
         "max_features": trial.suggest_float("max_features", 0.3, 1.0),
@@ -32,8 +32,6 @@ def objective(trial):
     }
 
     model = RandomForestRegressor(**params)
-
-    # 5-fold CV: minimize average validation RMSE
     scores = cross_val_score(
         model,
         X_train,
@@ -44,14 +42,13 @@ def objective(trial):
     )
     cv_rmse = float(np.sqrt(-scores).mean())
 
-    # Store each trial in MLflow
-    with mlflow.start_run(
-        nested=True, run_name=f"trial_{trial.number}"
-    ):
+    # Store each trial in MLflow as a nested run
+    with mlflow.start_run(nested=True, run_name=f"trial_{trial.number}"):
         mlflow.log_params(params)
         mlflow.log_metric("cv_rmse", cv_rmse)
 
     return cv_rmse
+
 
 # Parent run groups all tuning trials
 with mlflow.start_run(run_name="optuna-study"):
@@ -82,22 +79,24 @@ with mlflow.start_run(run_name="optuna-study"):
     test_mae = mean_absolute_error(y_test, predictions)
     test_r2 = r2_score(y_test, predictions)
 
-    mlflow.log_params({
-        f"best_{key}": value
-        for key, value in study.best_params.items()
-    })
-    mlflow.log_metrics({
-        "best_cv_rmse": study.best_value,
-        "test_rmse": test_rmse,
-        "test_mse": test_mse,
-        "test_mae": test_mae,
-        "test_r2": test_r2,
-    })
+    mlflow.log_params(
+        {f"best_{key}": value for key, value in study.best_params.items()}
+    )
+    mlflow.log_metrics(
+        {
+            "best_cv_rmse": study.best_value,
+            "test_rmse": test_rmse,
+            "test_mse": test_mse,
+            "test_mae": test_mae,
+            "test_r2": test_r2,
+        }
+    )
 
     mlflow.sklearn.log_model(
-    sk_model=best_model,
-    name="best_model",
-    skops_trusted_types=["sklearn.tree._tree.Tree"],)
+        sk_model=best_model,
+        name="best_model",
+        skops_trusted_types=["sklearn.tree._tree.Tree"],
+    )
 
     print("\nFinal test results")
     print(f"RMSE: {test_rmse:.3f}")
